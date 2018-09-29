@@ -51,9 +51,10 @@ public class DoonGame
     Material matBullet;
     float bulletSize = 0.3f;
     private SphereCollisionShape bulletCollisionShape;
-    BitmapText vida, balas_disponiveis, chaves_text;
+    BitmapText vida, balas_disponiveis, chaves_text,menu_text,fase;
     boolean portao = false;
-
+    int menu=0,count=1,countanterior=1;
+    Spatial menuArea;
     public static void main(String[] args) {
         DoonGame app = new DoonGame();
         app.showSettings = false;
@@ -61,7 +62,7 @@ public class DoonGame
     }
     private BulletAppState bulletAppState;
     private PlayerCameraNode player;
-    private boolean up = false, down = false, left = false, right = false, shoot = false, reload = false;
+    private boolean up = false, down = false, left = false, right = false, shoot = false, reload = false,space_bar=false;
     private Material boxMatColosion;
     private int inimigo_count;
     @Override
@@ -80,16 +81,14 @@ public class DoonGame
         bullet.setTextureMode(Sphere.TextureMode.Projected);
 
         createLigth();
-        createLab();
-
         boxMatColosion = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
         boxMatColosion.setBoolean("UseMaterialColors", true);
         boxMatColosion.setColor("Ambient", ColorRGBA.Red);
         boxMatColosion.setColor("Diffuse", ColorRGBA.Red);
 
-        createPlayer();
+
         initKeys();
-        initMenu();
+        initMenuLoad();
         bulletAppState.setDebugEnabled(false);
         bulletAppState.getPhysicsSpace().addCollisionListener(this);
         matBullet = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
@@ -163,27 +162,55 @@ public class DoonGame
     }
     public void Reset()
     {
-    rootNode.detachAllChildren();
-    inimigo_count=0;
-    inimigo= new HashMap<>();
-    stateManager.detach(bulletAppState);
-    bulletAppState = new BulletAppState();
-    stateManager.attach(bulletAppState);
-    SetFase();
-    createLab();
-    createPlayer();
-    initKeys();
-    bulletAppState.setDebugEnabled(false);
-    bulletAppState.getPhysicsSpace().addCollisionListener(this);
-    jogador = new Player();
-    jogador.vida=100;
-    vida.setText(jogador.TextoHp());
-    balas_disponiveis.setText(jogador.TextoAmmo());
-    chaves_text.setText(jogador.TextoChave());
+        if(count<=3 && count>=1)
+        {           
+            rootNode.detachAllChildren();
+            inimigo_count=0;
+            inimigo= new HashMap<>();
+            stateManager.detach(bulletAppState);
+            bulletAppState = new BulletAppState();
+            stateManager.attach(bulletAppState);
+            SetFase();
+            createLab();
+            createPlayer();
+            initKeys();
+            bulletAppState.setDebugEnabled(false);
+            bulletAppState.getPhysicsSpace().addCollisionListener(this);
+            jogador = new Player();
+            jogador.vida=100;
+            vida.setText(jogador.TextoHp());
+            balas_disponiveis.setText(jogador.TextoAmmo());
+            chaves_text.setText(jogador.TextoChave());
+            fase.setText("Nvl:"+Integer.toString(count));
+            countanterior=count;
+        }
+        else if(count == -1)
+        {
+            rootNode.detachAllChildren();
+            menu=-1;
+            vida.setText("");
+            balas_disponiveis.setText("");
+            chaves_text.setText("");
+            fase.setText("");
+            menu_text.setText("\tComandos:\r\n\r\nJ-Atira\r\n\r\nR-Recarrega\r\n\r\nW-Movimenta Para Cima\r\n\r\nA-Movimenta Para Esquerda\r\n\r\nS-Movimenta Para Atrás\r\n\r\nD-Movimenta Para Direita\r\n\r\n\r\n\r\nGame Over\n\r\nPrecione Enter para Jogar Novamente");
+        }
+        else
+        {
+            rootNode.detachAllChildren();
+            menu= -1;
+            vida.setText("");
+            balas_disponiveis.setText("");
+            chaves_text.setText("");
+            fase.setText("");
+            menu_text.setText("\tComandos:\r\n\r\nJ-Atira\r\n\r\nR-Recarrega\r\n\r\nW-Movimenta Para Cima\r\n\r\nA-Movimenta Para Esquerda\r\n\r\nS-Movimenta Para Atrás\r\n\r\nD-Movimenta Para Direita\r\n\r\n\r\n\r\nParabens voce terminou os tres andares do labirinto\n\r\nPrecione Enter para Jogar Novamente");
+        }
+    
     }
 
     @Override
     public void simpleUpdate(float tpf) {
+        if(menu==1)
+        {
         initCrossHairs();
         player.upDateKeys(tpf, up, down, left, right);
         if (shoot && !jogador.tiro_delay && !jogador.tiro_recarga && jogador.TemBalaPaint()) {
@@ -195,6 +222,31 @@ public class DoonGame
         Rotacionar(tpf);
         PortaoAbrir();
         Inimigo_Tiro(tpf);
+        }
+        else if(menu==0)
+        {
+            if(space_bar)
+            {
+            createLab();
+            createPlayer();
+            menu_text.setText("");
+            initMenu();
+            menu=1;
+            }
+
+        }
+        else if(menu==-1)
+        {
+            if(space_bar)
+            {
+            menu_text.setText("");
+            menu=1;
+            count=1;
+            countanterior=1;
+            Reset();
+            }
+        }    
+            
     }
 
     private void PortaoAbrir() {
@@ -258,6 +310,8 @@ public class DoonGame
         guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
         vida = new BitmapText(guiFont, false);
         balas_disponiveis = new BitmapText(guiFont, false);
+        fase = new BitmapText(guiFont, false);
+        fase.setText("Nvl:"+Integer.toString(count));
         vida.setText(jogador.TextoHp());
         balas_disponiveis.setText(jogador.TextoAmmo());
         vida.setLocalTranslation( // center
@@ -272,9 +326,28 @@ public class DoonGame
         chaves_text.setLocalTranslation( // center
                 settings.getWidth() / 2 - guiFont.getCharSet().getRenderedSize() / 3 * 2,
                 settings.getHeight() / 1.01f + chaves_text.getLineHeight() / 6.0f, 0);
+        
+        fase.setLocalTranslation( // center
+                settings.getWidth() / 7 - guiFont.getCharSet().getRenderedSize() / 3 * 2,
+                settings.getHeight() / 1.01f + fase.getLineHeight() / 6.0f, 0);
+        
+        
         guiNode.attachChild(vida);
         guiNode.attachChild(balas_disponiveis);
         guiNode.attachChild(chaves_text);
+        guiNode.attachChild(fase);
+    }
+        protected void initMenuLoad() {
+        guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
+        menu_text = new BitmapText(guiFont, false);
+        menu_text.setText("\tComandos:\r\n\r\nJ-Atira\r\n\r\nR-Recarrega\r\n\r\nW-Movimenta Para Cima\r\n\r\nA-Movimenta Para Esquerda\r\n\r\nS-Movimenta Para Atrás\r\n\r\nD-Movimenta Para Direita\r\n\r\n\r\n\r\nPrecione Enter para Iniciar");
+
+        menu_text.setLocalTranslation( // center
+                settings.getWidth() / 2.5f - guiFont.getCharSet().getRenderedSize() / 3 * 2,
+                settings.getHeight() / 1.1f + menu_text.getLineHeight() / 1.3f, 0);
+       
+      
+        guiNode.attachChild(menu_text);
     }
 
     @Override
@@ -335,6 +408,15 @@ public class DoonGame
 
         }
         switch (binding) {
+            case "Begin":
+                if (value) {
+                    space_bar = true;
+                } else {
+                    space_bar = false;
+                }
+                break;
+        }
+                switch (binding) {
             case "Reload":
                 if (value) {
                     reload = true;
@@ -343,6 +425,7 @@ public class DoonGame
                 }
                 break;
         }
+        
     }
 
     private void createLigth() {
@@ -368,7 +451,20 @@ public class DoonGame
         rootNode.addLight(ambient);
 
     }
+    private void createMenu(float x, float y, float z, String tex, String est) {
+        /* A colored lit cube. Needs light source! */
+        Box boxMesh = new Box(500f, 500f, 500f);
+        Geometry boxGeo = new Geometry("Menu", boxMesh);
+        Material boxMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        Texture monkeyTex = assetManager.loadTexture("Textures/" + tex + "." + est);
+        boxMat.setTexture("ColorMap", monkeyTex);
+        boxGeo.setMaterial(boxMat);
 
+        boxGeo.setMaterial(boxMat);
+        boxGeo.setLocalTranslation(x, y, z);
+        rootNode.attachChild(boxGeo);
+        menuArea = boxGeo;
+    }
     private void createCubo(float x, float y, float z, String tex, String est) {
         /* A colored lit cube. Needs light source! */
         Box boxMesh = new Box(3f, 3f, 3f);
@@ -531,10 +627,12 @@ public class DoonGame
         inputManager.addMapping("CharBackward", new KeyTrigger(KeyInput.KEY_S));
         inputManager.addMapping("Shoot", new KeyTrigger(KeyInput.KEY_J));
         inputManager.addMapping("Reload", new KeyTrigger(KeyInput.KEY_R));
+        inputManager.addMapping("Begin", new KeyTrigger(KeyInput.KEY_RETURN));
         inputManager.addListener(this, "CharLeft", "CharRight");
         inputManager.addListener(this, "CharForward", "CharBackward");
         inputManager.addListener(this, "Shoot", "Shoot");
         inputManager.addListener(this, "Reload", "Reload");
+        inputManager.addListener(this, "Begin", "Begin");
 
     }
 
@@ -593,16 +691,32 @@ public class DoonGame
             }
             if (event.getNodeB().getName().equals("fim"))
             {
+                 if(count==countanterior)
+                {
+                   count++;
                    Reset();
+                }
+                   
             }
             else if(event.getNodeA().getName().equals("fim"))
             {    
+                if(count==countanterior)
+                {
+                   count++;
                    Reset();
+                }
+                   
             }
             if (event.getNodeA().getName().equals("bullet_ini")) {
                 if(jogador.Morte(15))
                 {
-                    Reset();
+                    if(count==countanterior)
+                    {
+                        count=-1;
+                        countanterior=-1;
+                        Reset();
+                    }
+                   
                 }
                 else
                 {
@@ -613,7 +727,13 @@ public class DoonGame
             } else if (event.getNodeB().getName().equals("bullet_ini")) {
                 if(jogador.Morte(15))
                 {
-                    Reset();
+                    if(count==countanterior)
+                    {
+                        count=-1;
+                        countanterior=-1;
+                        Reset();
+                    }
+                    
                 }
                 else
                 {

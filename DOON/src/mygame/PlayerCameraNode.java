@@ -33,7 +33,7 @@ public class PlayerCameraNode extends Node {
     private final BetterCharacterControl physicsCharacter;
     private final AnimControl animationControl;
     private final AnimChannel animationChannel;
-    private Vector3f walkDirection = new Vector3f(0, 0, 0);
+    protected Vector3f walkDirection = new Vector3f(0, 0, 0);
     private Vector3f viewDirection = new Vector3f(0, 0, 0);
     private float airTime;
     private Node pivot;
@@ -68,7 +68,10 @@ public class PlayerCameraNode extends Node {
         super.attachChild(camNode);
 
     }
-
+    public Node getPivot()
+    {
+        return pivot;
+    }
     public Vector3f getWalkDirection() {
         return walkDirection;
     }
